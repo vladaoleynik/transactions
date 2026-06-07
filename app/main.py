@@ -1,3 +1,5 @@
+"""HTTP API: accept events into the queue for async processing."""
+
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -27,5 +29,6 @@ def health() -> dict[str, str]:
 
 @app.post("/events", status_code=status.HTTP_202_ACCEPTED)
 def ingest_event(event: TransactionEvent) -> dict[str, str]:
+    # 202 = accepted for processing; persistence happens asynchronously in the worker.
     message_id = queue.publish(event)
     return {"status": "accepted", "message_id": message_id}

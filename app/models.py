@@ -21,7 +21,7 @@ class Transaction(SQLModel, table=True):
     __tablename__ = "transactions"
     __table_args__ = (Index("ix_transactions_user_id_timestamp", "user_id", "timestamp"),)
 
-    id: str = Field(primary_key=True)
+    id: str = Field(primary_key=True)  # dedup key; same id → effectively-once storage
     user_id: str = Field(index=True)
     amount: Decimal
     currency: str = Field(max_length=3)

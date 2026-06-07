@@ -2,7 +2,7 @@
 
 Async event processing service for transaction events. Ingests events over HTTP, queues them for background processing, converts amounts to USD, and exposes read APIs for user summaries and transaction history.
 
-**Status:** bootstrapped — infrastructure and project layout are in place; business logic is not implemented yet.
+**Status:** ingest and processing pipeline implemented; read APIs and metrics are not implemented yet.
 
 ## Stack
 
@@ -53,9 +53,11 @@ Run the same checks manually:
 ```bash
 make check        # lint + test (matches CI)
 make lint         # ruff + mypy only
-make test         # pytest only
+make test         # pytest (in-memory SQLite via test fixtures; no Docker required)
 make pre-commit   # all pre-commit hooks
 ```
+
+Processing tests use in-memory SQLite. `conftest.py` patches `persist_transaction` with a test-only SQLite implementation (`tests/db.py`); production code remains PostgreSQL-only.
 
 Fix formatting issues:
 
@@ -92,7 +94,7 @@ docker compose down
 | `api` | 8000 | HTTP API |
 | `postgres` | 5432 | Persistent storage |
 | `redis` | 6379 | Event queue (Redis Streams) |
-| `worker` | — | Background consumer (stub) |
+| `worker` | — | Stream consumer: FX conversion, dedup, persist |
 
 ## Configuration
 
@@ -108,15 +110,17 @@ Docker Compose sets `DATABASE_URL` and `REDIS_URL` for the `api` and `worker` se
 
 ```
 app/
-  main.py         # FastAPI application
-  worker.py       # Stream consumer (stub)
+  main.py         # FastAPI application (POST /events)
+  worker.py       # Stream consumer with retry/backoff
   config.py       # Settings (pydantic-settings)
   database.py     # SQLModel engine + session
-  models.py       # Database models (to be implemented)
-  queue.py        # Redis Streams client (to be implemented)
-  rates.py        # FX conversion (to be implemented)
-  processing.py   # Dedup + persist logic (to be implemented)
+  models.py       # TransactionEvent + Transaction table
+  queue.py        # Redis Streams publish/consume/dead-letter
+  rates.py        # FX conversion (Frankfurter API)
+  processing.py   # Dedup + persist logic
 tests/
+  test_processing.py  # dedup + currency conversion
+  test_worker.py      # retry / dead-letter behaviour
 .github/workflows/ci.yml
 .pre-commit-config.yaml
 docker-compose.yml

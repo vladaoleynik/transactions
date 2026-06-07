@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     stream_name: str = "transactions"
     consumer_group: str = "processors"
-    consumer_name: str = "worker-1"
+    consumer_name: str = "worker-1"  # unique per worker replica in the same group
     fx_api_base_url: str = "https://api.frankfurter.app"
 
 
