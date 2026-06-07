@@ -15,6 +15,9 @@ Async event processing service for transaction events. Ingests events over HTTP,
 | FX rates | Frankfurter API |
 | Dependencies | [uv](https://docs.astral.sh/uv/) |
 | Orchestration | Docker Compose |
+| Lint / format | [Ruff](https://docs.astral.sh/ruff/) |
+| Type checking | [mypy](https://mypy-lang.org/) |
+| Git hooks | [pre-commit](https://pre-commit.com/) |
 
 ## Prerequisites
 
@@ -24,7 +27,7 @@ Async event processing service for transaction events. Ingests events over HTTP,
 ## Quick start
 
 ```bash
-make setup   # install dependencies + create .env from template
+make setup   # install dependencies, create .env, install pre-commit hooks
 make run     # start postgres, redis, api, and worker
 ```
 
@@ -37,14 +40,43 @@ curl http://localhost:8000/health
 
 API docs: http://localhost:8000/docs
 
+## Development
+
+After `make setup`, [pre-commit](https://pre-commit.com/) runs automatically on each commit:
+
+- Ruff (lint + format check)
+- mypy
+- pytest
+
+Run the same checks manually:
+
+```bash
+make check        # lint + test (matches CI)
+make lint         # ruff + mypy only
+make test         # pytest only
+make pre-commit   # all pre-commit hooks
+```
+
+Fix formatting issues:
+
+```bash
+uv run ruff format .
+```
+
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on push and pull requests to `main`/`master`:
+
+1. Ruff check and format check
+2. mypy
+3. pytest
+
 ## Manual commands
 
 ```bash
-# Install runtime + dev dependencies
+# Install runtime + dev dependencies and git hooks
 uv sync --all-groups
-
-# Run tests (when added)
-uv run pytest
+uv run pre-commit install
 
 # Run API locally (requires postgres + redis running)
 uv run uvicorn app.main:app --reload
@@ -85,6 +117,8 @@ app/
   rates.py        # FX conversion (to be implemented)
   processing.py   # Dedup + persist logic (to be implemented)
 tests/
+.github/workflows/ci.yml
+.pre-commit-config.yaml
 docker-compose.yml
 Dockerfile
 Makefile
