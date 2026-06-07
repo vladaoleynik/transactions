@@ -3,6 +3,7 @@ from collections.abc import Generator
 from sqlmodel import Session, SQLModel, create_engine
 
 from app.config import settings
+from app.models import Transaction  # noqa: F401  # register table metadata
 
 engine = create_engine(settings.database_url, pool_pre_ping=True)
 
