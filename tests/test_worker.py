@@ -3,10 +3,10 @@ from decimal import Decimal
 from unittest.mock import MagicMock
 
 import pytest
-from app.models import TransactionEvent
 from app.processing import ProcessingError
 from app.queue import EventQueue
 from app.rates import RateService
+from app.schemas import TransactionEvent
 from app.worker import MAX_RETRIES, handle_message
 from sqlmodel import Session
 

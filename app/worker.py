@@ -10,10 +10,10 @@ from sqlmodel import Session
 
 from app.config import settings
 from app.database import engine, init_db
-from app.models import TransactionEvent
 from app.processing import ProcessingError, process_event
 from app.queue import EventQueue
 from app.rates import RateService
+from app.schemas import TransactionEvent
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)

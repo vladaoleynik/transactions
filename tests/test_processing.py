@@ -4,9 +4,10 @@ from unittest.mock import MagicMock
 
 import httpx
 import pytest
-from app.models import Transaction, TransactionEvent
+from app.models import Transaction
 from app.processing import ProcessingError, process_event
 from app.rates import RateService
+from app.schemas import TransactionEvent
 from sqlmodel import Session, select
 
 

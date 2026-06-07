@@ -9,8 +9,9 @@ from datetime import UTC, datetime
 from sqlalchemy.dialects.postgresql import insert
 from sqlmodel import Session, SQLModel
 
-from app.models import Transaction, TransactionEvent
+from app.models import Transaction
 from app.rates import RateLookupError, RateService
+from app.schemas import TransactionEvent
 
 
 class ProcessingError(Exception):

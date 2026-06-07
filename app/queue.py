@@ -12,7 +12,7 @@ from typing import cast
 import redis
 
 from app.config import settings
-from app.models import TransactionEvent
+from app.schemas import TransactionEvent
 
 
 class EventQueue:

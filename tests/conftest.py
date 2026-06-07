@@ -5,9 +5,11 @@ import pytest
 from app.models import Transaction  # noqa: F401
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
+from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
 from tests.db import persist_transaction_sqlite
+from tests.factories import TransactionFactory
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -28,7 +30,12 @@ def _use_sqlite_persistence(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.fixture(scope="session")
 def engine() -> Generator[Engine, None, None]:
-    test_engine = create_engine("sqlite://", connect_args={"check_same_thread": False})
+    # StaticPool keeps one in-memory SQLite connection across TestClient worker threads.
+    test_engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     SQLModel.metadata.create_all(test_engine)
     yield test_engine
     test_engine.dispose()
@@ -46,3 +53,9 @@ def clean_transactions(engine: Engine) -> Generator[None, None, None]:
 def session(engine: Engine) -> Generator[Session, None, None]:
     with Session(engine) as db_session:
         yield db_session
+
+
+@pytest.fixture
+def transaction_factory(session: Session) -> type[TransactionFactory]:
+    TransactionFactory._meta.sqlalchemy_session = session  # type: ignore[attr-defined]
+    return TransactionFactory
