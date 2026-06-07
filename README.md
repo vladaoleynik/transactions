@@ -65,7 +65,7 @@ uv run ruff format .
 
 ## CI
 
-GitHub Actions (`.github/workflows/ci.yml`) runs on push and pull requests to `main`/`master`:
+GitHub Actions (`.github/workflows/ci.yml`) runs on push and pull requests to `main`, `develop`, and all other branches:
 
 1. Ruff check and format check
 2. mypy
