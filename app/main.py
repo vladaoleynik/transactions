@@ -14,6 +14,7 @@ from app.health import check_database, check_redis
 from app.queries import get_user_summary, list_user_transactions
 from app.queue import queue
 from app.schemas import (
+    IngestEventResponse,
     MetricsResponse,
     TransactionEvent,
     UserSummaryResponse,
@@ -57,11 +58,11 @@ def metrics() -> MetricsResponse:
     return MetricsResponse(events_processed=queue.processed_event_count())
 
 
-@app.post("/events", status_code=status.HTTP_202_ACCEPTED)
-def ingest_event(event: TransactionEvent) -> dict[str, str]:
+@app.post("/events", status_code=status.HTTP_202_ACCEPTED, response_model=IngestEventResponse)
+def ingest_event(event: TransactionEvent) -> IngestEventResponse:
     # 202 = accepted for processing; persistence happens asynchronously in the worker.
     message_id = queue.publish(event)
-    return {"status": "accepted", "message_id": message_id}
+    return IngestEventResponse(status="accepted", message_id=message_id)
 
 
 @app.get("/users/{user_id}/summary", response_model=UserSummaryResponse)

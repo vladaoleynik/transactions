@@ -36,3 +36,8 @@ class UserTransactionsResponse(SQLModel):
 
 class MetricsResponse(SQLModel):
     events_processed: int
+
+
+class IngestEventResponse(SQLModel):
+    status: str
+    message_id: str
