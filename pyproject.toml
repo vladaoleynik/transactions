@@ -19,6 +19,7 @@ dev = [
     "pre-commit>=4.0",
     "ruff>=0.9",
     "factory-boy>=3.3",
+    "testcontainers[postgres]>=4.9",
 ]
 
 [build-system]
@@ -30,6 +31,9 @@ packages = ["app"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "integration: full-stack tests using Docker (Postgres + Redis via testcontainers)",
+]
 
 [tool.ruff]
 target-version = "py312"
@@ -58,3 +62,7 @@ plugins = ["pydantic.mypy"]
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "testcontainers.*"
+ignore_missing_imports = true

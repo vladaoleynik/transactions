@@ -15,9 +15,15 @@ from tests.db import persist_transaction_sqlite
 from tests.factories import TransactionFactory
 
 
-@pytest.fixture(scope="session", autouse=True)
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    for item in items:
+        if "integration" in str(item.path):
+            item.add_marker(pytest.mark.integration)
+
+
+@pytest.fixture
 def _stub_app_startup() -> Generator[None, None, None]:
-    """API tests import the FastAPI app; avoid requiring Postgres/Redis on startup."""
+    """Avoid requiring Postgres/Redis when unit tests open the FastAPI app."""
     with (
         patch("app.database.init_db", lambda: None),
         patch("app.main.init_db", lambda: None),
@@ -27,7 +33,12 @@ def _stub_app_startup() -> Generator[None, None, None]:
 
 
 @pytest.fixture(autouse=True)
-def _use_sqlite_persistence(monkeypatch: pytest.MonkeyPatch) -> None:
+def _use_sqlite_persistence(
+    request: pytest.FixtureRequest,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if request.node.get_closest_marker("integration") is not None:
+        return
     """Route persistence through SQLite in tests; production code stays PostgreSQL-only."""
     monkeypatch.setattr("app.processing.persist_transaction", persist_transaction_sqlite)
 
@@ -46,7 +57,11 @@ def engine() -> Generator[Engine, None, None]:
 
 
 @pytest.fixture(autouse=True)
-def clean_transactions(engine: Engine) -> Generator[None, None, None]:
+def clean_transactions(request: pytest.FixtureRequest) -> Generator[None, None, None]:
+    if request.node.get_closest_marker("integration") is not None:
+        yield
+        return
+    engine: Engine = request.getfixturevalue("engine")
     with engine.connect() as connection:
         connection.execute(text("DELETE FROM transactions"))
         connection.commit()
@@ -60,7 +75,10 @@ def session(engine: Engine) -> Generator[Session, None, None]:
 
 
 @pytest.fixture
-def client(session: Session) -> Generator[TestClient, None, None]:
+def client(
+    _stub_app_startup: None,
+    session: Session,
+) -> Generator[TestClient, None, None]:
     def override_get_session() -> Generator[Session, None, None]:
         yield session
 
