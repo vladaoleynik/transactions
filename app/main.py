@@ -5,15 +5,20 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 
 from fastapi import Depends, FastAPI, Query, status
+from fastapi.responses import JSONResponse
 from sqlmodel import Session
 
 from app.api_errors import register_exception_handlers
 from app.database import get_session, init_db
+from app.health import check_database, check_redis
 from app.queries import get_user_summary, list_user_transactions
-from app.queue import EventQueue
-from app.schemas import TransactionEvent, UserSummaryResponse, UserTransactionsResponse
-
-queue = EventQueue()
+from app.queue import queue
+from app.schemas import (
+    MetricsResponse,
+    TransactionEvent,
+    UserSummaryResponse,
+    UserTransactionsResponse,
+)
 
 
 @asynccontextmanager
@@ -29,7 +34,27 @@ register_exception_handlers(app)
 
 @app.get("/health")
 def health() -> dict[str, str]:
+    """Liveness: process is running (does not check dependencies)."""
     return {"status": "ok"}
+
+
+@app.get("/health/ready")
+def readiness() -> JSONResponse:
+    """Readiness: Postgres and Redis are reachable."""
+    try:
+        check_database()
+        check_redis(queue)
+    except Exception:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"status": "not ready"},
+        )
+    return JSONResponse(content={"status": "ready"})
+
+
+@app.get("/metrics", response_model=MetricsResponse)
+def metrics() -> MetricsResponse:
+    return MetricsResponse(events_processed=queue.processed_event_count())
 
 
 @app.post("/events", status_code=status.HTTP_202_ACCEPTED)

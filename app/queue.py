@@ -25,6 +25,7 @@ class EventQueue:
         self._group = settings.consumer_group
         # Separate stream for events that exceeded max retries (manual replay/inspection).
         self._dead_letter_stream = f"{self._stream}:dlq"
+        self._processed_events_key = "metrics:events_processed_total"
 
     def ensure_consumer_group(self) -> None:
         # MKSTREAM creates the stream; workers read via XREADGROUP on this group.
@@ -81,6 +82,23 @@ class EventQueue:
         )
         return str(dead_letter_id)
 
+    def ping(self) -> None:
+        self._redis.ping()
+
+    def pending_message_count(self) -> int:
+        try:
+            summary = self._redis.xpending(self._stream, self._group)
+            return int(summary["pending"])
+        except redis.ResponseError:
+            return 0
+
+    def record_event_processed(self) -> None:
+        self._redis.incr(self._processed_events_key)
+
+    def processed_event_count(self) -> int:
+        value = self._redis.get(self._processed_events_key)
+        return int(value) if value is not None else 0
+
     def _read_stream(
         self,
         consumer_name: str,
@@ -88,13 +106,17 @@ class EventQueue:
         count: int,
         block_ms: int,
     ) -> list[tuple[str, TransactionEvent]]:
-        entries = self._redis.xreadgroup(
-            groupname=self._group,
-            consumername=consumer_name,
-            streams={self._stream: stream_id},
-            count=count,
-            block=block_ms,
-        )
+        try:
+            entries = self._redis.xreadgroup(
+                groupname=self._group,
+                consumername=consumer_name,
+                streams={self._stream: stream_id},
+                count=count,
+                block=block_ms,
+            )
+        except redis.TimeoutError:
+            # Blocking read expired with no messages; normal idle behaviour.
+            return []
         if not entries:
             return []
 
@@ -129,3 +151,6 @@ class EventQueue:
             currency=payload["currency"],
             timestamp=datetime.fromisoformat(payload["timestamp"]),
         )
+
+
+queue = EventQueue()

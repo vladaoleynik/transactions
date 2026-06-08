@@ -29,7 +29,7 @@ services:
 
   api:
     build: .
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    command: fastapi dev app/main.py --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
     environment:
@@ -40,6 +40,18 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   worker:
     build: .

@@ -11,7 +11,7 @@ from sqlmodel import Session
 from app.config import settings
 from app.database import engine, init_db
 from app.processing import ProcessingError, process_event
-from app.queue import EventQueue
+from app.queue import EventQueue, queue
 from app.rates import RateService
 from app.schemas import TransactionEvent
 
@@ -41,6 +41,7 @@ def handle_message(
         inserted = process_event(session, event, rate_service)
         # Success or safe duplicate — release the message from the pending list.
         queue.ack(message_id)
+        queue.record_event_processed()
         retry_counts.pop(message_id, None)
         if inserted:
             logger.info("Processed event id=%s user_id=%s", event.id, event.user_id)
@@ -80,7 +81,6 @@ def handle_message(
 
 def run_worker() -> None:
     init_db()
-    queue = EventQueue()
     queue.ensure_consumer_group()
     rate_service = RateService()
     # Tracks attempts per Redis message id (not event id) across retries.

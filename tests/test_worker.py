@@ -42,6 +42,7 @@ def test_handle_message_acks_on_success(
 
     assert delay is None
     queue.ack.assert_called_once_with("1-0")
+    queue.record_event_processed.assert_called_once()
     queue.dead_letter.assert_not_called()
 
 

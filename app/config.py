@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     stream_name: str = "transactions"
     consumer_group: str = "processors"
     consumer_name: str = "worker-1"  # unique per worker replica in the same group
-    fx_api_base_url: str = "https://api.frankfurter.app"
+    fx_api_base_url: str = "https://api.frankfurter.dev/v1"
 
 
 settings = Settings()

@@ -8,7 +8,7 @@ Async event processing service for transaction events. Ingests events over HTTP,
 
 | Component | Choice |
 |-----------|--------|
-| API | FastAPI + Uvicorn |
+| API | FastAPI (`fastapi dev`) |
 | Queue | Redis Streams |
 | Database | PostgreSQL |
 | ORM | SQLModel (sync) |
@@ -81,7 +81,7 @@ uv sync --all-groups
 uv run pre-commit install
 
 # Run API locally (requires postgres + redis running)
-uv run uvicorn app.main:app --reload
+uv run fastapi dev app/main.py
 
 # Stop Docker services
 docker compose down

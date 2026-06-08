@@ -32,3 +32,7 @@ class UserTransactionsResponse(SQLModel):
     page_size: int
     total: int
     items: list[TransactionItem]
+
+
+class MetricsResponse(SQLModel):
+    events_processed: int

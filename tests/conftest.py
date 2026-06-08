@@ -17,7 +17,8 @@ def _stub_app_startup() -> Generator[None, None, None]:
     """API tests import the FastAPI app; avoid requiring Postgres/Redis on startup."""
     with (
         patch("app.database.init_db", lambda: None),
-        patch("app.main.queue.ensure_consumer_group", lambda: None),
+        patch("app.main.init_db", lambda: None),
+        patch("app.queue.queue.ensure_consumer_group", lambda: None),
     ):
         yield
 
