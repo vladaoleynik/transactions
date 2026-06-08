@@ -2,12 +2,12 @@
 
 from sqlalchemy import text
 
-from app.database import engine
+import app.database as database
 from app.queue import EventQueue
 
 
 def check_database() -> None:
-    with engine.connect() as connection:
+    with database.engine.connect() as connection:
         connection.execute(text("SELECT 1"))
 
 

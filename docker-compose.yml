@@ -33,7 +33,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql+psycopg://events:events@postgres:5432/events
+      DATABASE_URL: postgresql://events:events@postgres:5432/events
       REDIS_URL: redis://redis:6379/0
     depends_on:
       postgres:
@@ -57,7 +57,7 @@ services:
     build: .
     command: python -m app.worker
     environment:
-      DATABASE_URL: postgresql+psycopg://events:events@postgres:5432/events
+      DATABASE_URL: postgresql://events:events@postgres:5432/events
       REDIS_URL: redis://redis:6379/0
     depends_on:
       postgres:

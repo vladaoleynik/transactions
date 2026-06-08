@@ -25,7 +25,7 @@ from tests.integration.helpers import process_pending_events
 @pytest.fixture(scope="session")
 def postgres_container() -> Generator[PostgresContainer, None, None]:
     try:
-        with PostgresContainer("postgres:16-alpine", driver="psycopg") as postgres:
+        with PostgresContainer("postgres:16-alpine") as postgres:
             yield postgres
     except Exception as exc:
         pytest.skip(f"Docker is required for integration tests: {exc}")
