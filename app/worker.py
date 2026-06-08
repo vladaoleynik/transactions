@@ -1,7 +1,4 @@
-"""Background consumer: read queue → convert FX → persist with dedup.
-
-See README "Delivery semantics" for at-least-once (queue) vs effectively-once (DB).
-"""
+"""Background consumer: read queue → convert FX → persist with dedup."""
 
 import logging
 import time
