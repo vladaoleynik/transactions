@@ -10,10 +10,12 @@ from app.schemas import TransactionEvent
 from app.worker import MAX_RETRIES, handle_message
 from sqlmodel import Session
 
+from tests.factories import TransactionEventFactory
+
 
 @pytest.fixture
-def event() -> TransactionEvent:
-    return TransactionEvent(
+def event():
+    return TransactionEventFactory.build(
         id="tx-1",
         user_id="user-1",
         amount=Decimal("10.00"),

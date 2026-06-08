@@ -6,6 +6,8 @@ from app.main import app
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import OperationalError
 
+from tests.factories import TransactionEventFactory
+
 
 def test_returns_503_when_database_unavailable() -> None:
     with patch(
@@ -19,16 +21,16 @@ def test_returns_503_when_database_unavailable() -> None:
 
 
 def test_returns_503_when_queue_unavailable() -> None:
+    payload = TransactionEventFactory.build(
+        id="tx-1",
+        user_id="user-1",
+        amount="10.00",
+    ).model_dump(mode="json")
+
     with patch("app.main.queue.publish", side_effect=redis.ConnectionError("redis down")):
         response = TestClient(app, raise_server_exceptions=False).post(
             "/events",
-            json={
-                "id": "tx-1",
-                "user_id": "user-1",
-                "amount": "10.00",
-                "currency": "EUR",
-                "timestamp": "2026-06-07T12:00:00Z",
-            },
+            json=payload,
         )
 
     assert response.status_code == 503

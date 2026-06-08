@@ -1,24 +1,48 @@
-from collections.abc import Generator
 from datetime import UTC, datetime
+from decimal import Decimal
+from unittest.mock import patch
 
-import pytest
-from app.database import get_session
-from app.main import app
 from fastapi.testclient import TestClient
-from sqlmodel import Session
 
-from tests.factories import TransactionFactory
+from tests.factories import TransactionEventFactory, TransactionFactory
 
 
-@pytest.fixture
-def client(session: Session) -> Generator[TestClient, None, None]:
-    def override_get_session() -> Generator[Session, None, None]:
-        yield session
+def test_ingest_event_returns_202(client: TestClient) -> None:
+    payload = TransactionEventFactory.build(
+        id="tx-1",
+        user_id="user-1",
+        amount=Decimal("100.50"),
+    ).model_dump(mode="json")
 
-    app.dependency_overrides[get_session] = override_get_session
-    with TestClient(app) as test_client:
-        yield test_client
-    app.dependency_overrides.clear()
+    with patch("app.main.queue.publish", return_value="1717756800000-0") as publish:
+        response = client.post("/events", json=payload)
+
+    assert response.status_code == 202
+    assert response.json() == {
+        "status": "accepted",
+        "message_id": "1717756800000-0",
+    }
+    publish.assert_called_once()
+    event = publish.call_args.args[0]
+    assert event.id == "tx-1"
+    assert event.user_id == "user-1"
+    assert str(event.amount) == "100.50"
+    assert event.currency == "EUR"
+
+
+def test_ingest_event_rejects_invalid_payload(client: TestClient) -> None:
+    response = client.post("/events", json={"id": "tx-1"})
+
+    assert response.status_code == 422
+    errors = response.json()["detail"]
+    assert isinstance(errors, list)
+    assert len(errors) >= 1
+
+    missing_fields = {error["loc"][-1] for error in errors if error["type"] == "missing"}
+    assert "user_id" in missing_fields
+    assert "amount" in missing_fields
+    assert "currency" in missing_fields
+    assert "timestamp" in missing_fields
 
 
 def test_user_summary_returns_total_and_count(
@@ -105,3 +129,11 @@ def test_user_transactions_supports_date_filter_and_pagination(
     assert payload["page_size"] == 10
     assert len(payload["items"]) == 1
     assert payload["items"][0]["id"] == "tx-2"
+
+
+def test_metrics_returns_events_processed_count(client: TestClient) -> None:
+    with patch("app.main.queue.processed_event_count", return_value=42):
+        response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert response.json() == {"events_processed": 42}

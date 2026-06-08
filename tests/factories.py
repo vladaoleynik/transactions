@@ -5,6 +5,7 @@ from decimal import Decimal
 
 import factory
 from app.models import Transaction
+from app.schemas import TransactionEvent
 from factory.alchemy import SQLAlchemyModelFactory
 
 
@@ -20,3 +21,16 @@ class TransactionFactory(SQLAlchemyModelFactory):
     timestamp = factory.LazyFunction(lambda: datetime(2026, 6, 1, tzinfo=UTC))
     amount_usd = Decimal("12.00")
     processed_at = factory.LazyFunction(lambda: datetime(2026, 6, 7, tzinfo=UTC))
+
+
+class TransactionEventFactory(factory.Factory):
+    """Builds POST /events payloads (not persisted rows)."""
+
+    class Meta:
+        model = TransactionEvent
+
+    id = factory.Sequence(lambda n: f"tx-{n}")
+    user_id = factory.Sequence(lambda n: f"user-{n}")
+    amount = Decimal("100.50")
+    currency = "EUR"
+    timestamp = factory.LazyFunction(lambda: datetime(2026, 6, 7, 12, 0, tzinfo=UTC))

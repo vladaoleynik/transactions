@@ -2,7 +2,10 @@ from collections.abc import Generator
 from unittest.mock import patch
 
 import pytest
+from app.database import get_session
+from app.main import app
 from app.models import Transaction  # noqa: F401
+from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import StaticPool
@@ -54,6 +57,17 @@ def clean_transactions(engine: Engine) -> Generator[None, None, None]:
 def session(engine: Engine) -> Generator[Session, None, None]:
     with Session(engine) as db_session:
         yield db_session
+
+
+@pytest.fixture
+def client(session: Session) -> Generator[TestClient, None, None]:
+    def override_get_session() -> Generator[Session, None, None]:
+        yield session
+
+    app.dependency_overrides[get_session] = override_get_session
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
